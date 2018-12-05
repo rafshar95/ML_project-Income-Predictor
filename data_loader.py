@@ -6,7 +6,8 @@ POS_STR = ' >50K'
 
 
 def load_train_data(train_file_path, valid_rate=0.1, is_df=True):
-    data_frame = pd.read_csv(train_file_path, header=None).sample(frac=1, random_state=11)
+    data_frame = pd.read_csv(train_file_path, header=None, names=['age','workclass','fnlwgt','education','education-num','marital-status','occupation','relationship','race','sex','capital-gain','capital-loss','hours-per-week','native-country','income'])
+    data_frame=data_frame.sample(frac=1, random_state=11)
     np.random.seed(11)
     mask = np.random.rand(len(data_frame)) < 1 - valid_rate
     train_df, valid_df = data_frame.iloc[mask, :], data_frame.iloc[~mask, :]
@@ -19,7 +20,8 @@ def load_train_data(train_file_path, valid_rate=0.1, is_df=True):
 
 
 def load_test_data(test_file_path, is_df=True):
-    data_frame = pd.read_csv(test_file_path, header=None, skiprows=1)
+    data_frame = pd.read_csv(test_file_path, header=None, names=['age','workclass','fnlwgt','education','education-num','marital-status','occupation','relationship','race','sex','capital-gain','capital-loss','hours-per-week','native-country','income'],
+skiprows=1)
     if is_df:
         return data_frame
 
