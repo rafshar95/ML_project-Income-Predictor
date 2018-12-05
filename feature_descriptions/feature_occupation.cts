@@ -1,0 +1,16 @@
+Value,Frequency,Probability
+ ?,1843.000,0.104
+ Adm-clerical,3770.000,0.134
+ Armed-Forces,9.000,0.111
+ Craft-repair,4099.000,0.227
+ Exec-managerial,4066.000,0.484
+ Farming-fishing,994.000,0.116
+ Handlers-cleaners,1370.000,0.063
+ Machine-op-inspct,2002.000,0.125
+ Other-service,3295.000,0.042
+ Priv-house-serv,149.000,0.007
+ Prof-specialty,4140.000,0.449
+ Protective-serv,649.000,0.325
+ Sales,3650.000,0.269
+ Tech-support,928.000,0.305
+ Transport-moving,1597.000,0.200

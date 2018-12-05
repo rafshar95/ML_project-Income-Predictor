@@ -1,0 +1,10 @@
+Value,Frequency,Probability
+ ?,1836.000,0.104
+ Federal-gov,960.000,0.386
+ Local-gov,2093.000,0.295
+ Never-worked,7.000,0.000
+ Private,22696.000,0.219
+ Self-emp-inc,1116.000,0.557
+ Self-emp-not-inc,2541.000,0.285
+ State-gov,1298.000,0.272
+ Without-pay,14.000,0.000
