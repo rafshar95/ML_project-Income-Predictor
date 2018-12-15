@@ -47,14 +47,13 @@ fields_to_update={'native-country': native_country_dict,
 'workclass':
 	{' Federal-gov': 'Federal-gov', ' Local-gov': 'Local-gov', ' Never-worked': 'Unemployed',
 	' State-gov': 'Local-gov', ' Without-pay': 'Unemployed'},
-'income':{' <=50K':0,' >50K':1}
+'income':{' <=50K':0,' >50K':1,' <=50K.':0,' >50K.':1,}
 }
 
 for field, changes in fields_to_update.items():
 	train_data[field].replace(to_replace=changes,inplace=True)
 	valid_data[field].replace(to_replace=changes,inplace=True)
 	test_data[field].replace(to_replace=changes,inplace=True)
-train_data['dnr']=(train_data['capital-gain']==0)==(train_data['capital-loss']==0).astype(int)
 #drop unnecessary
 train_data = train_data.drop(columns = ['fnlwgt', 'education'])
 valid_data = valid_data.drop(columns = ['fnlwgt', 'education'])
@@ -63,7 +62,7 @@ test_data = test_data.drop(columns = ['fnlwgt', 'education'])
 num_features = ['age', 'education-num', 'capital-gain', 'capital-loss', 'hours-per-week']
 num_transformer = Pipeline(steps = [('scaler', StandardScaler())])
 #categorical
-cat_features = ['workclass', 'marital-status', 'occupation', 'relationship', 'race', 'sex', 'native-country','dnr']
+cat_features = ['workclass', 'marital-status', 'occupation', 'relationship', 'race', 'sex', 'native-country']
 cat_transformer = Pipeline(steps = [('imputer', SimpleImputer(missing_values = ' ?',strategy = 'constant')),
                                     ('onehot', OneHotEncoder(handle_unknown = 'ignore'))])
 # create preprocessor containing above pipelines
@@ -75,16 +74,12 @@ preprocessor = ColumnTransformer(transformers=[('num', num_transformer, num_feat
 
 gb=GradientBoostingClassifier()
 pipeline = Pipeline(steps=[('preprocessor', preprocessor),
-	('transformer',FunctionTransformer(lambda x: x.todense(), accept_sparse=True)),
                             ('clf', gb)])
 ##print(pipeline.get_params().keys())
-#split into X and Y
-dense=FunctionTransformer(lambda x: x.todense(), accept_sparse=True)
-light=FunctionTransformer(lambda x: x, accept_sparse=True)
-
+#split into X and Y - no test data
 X = train_data.drop(columns = 'income')
 Y = train_data['income']
-X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size = .2)
+X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size = 0)
 
 classifiers={
 'LR':LogisticRegression(),
@@ -92,45 +87,27 @@ classifiers={
 'SVC':SVC(),
 'Tree':DecisionTreeClassifier(),
 'Gaussian':GaussianNB(priors = None),
-'RandForest':RandomForestClassifier(),
-'GradBoost': GradientBoostingClassifier(loss='exponential',max_features=5, min_samples_split= 0.016681005372000592),
+'RandForest':RandomForestClassifier(bootstrap = True, n_estimators = 40,
+                                                                criterion = 'entropy',
+                                                                 max_depth = 20,
+                                                                 min_samples_split = 15,
+                                                                 min_samples_leaf = 2,
+                                                                 max_features = 'auto'),
+'GradBoost': GradientBoostingClassifier(loss='exponential', min_samples_split= 0.016681005372000592),
 'Bag':BaggingClassifier(GradientBoostingClassifier(),max_samples = 0.2,max_features = 0.8,bootstrap_features = True)}
 
-grids={
-'LR':{'clf__C': np.logspace(0,2,10), 'clf__solver': ['lbfgs', 'saga', 'liblinear', 'newton-cg']},
-'LinSVC':{'clf__C': np.linspace(1,10,10),'clf__penalty': ['l1', 'l2']},
-'Tree':{'clf__min_weight_fraction_leaf':np.logspace(-3,-.5,10),'clf__min_samples_split':np.logspace(-3,-.5,10)},
-'Gaussian':{'clf__var_smoothing': np.logspace(-10,2,10)},
-'RandForest':{'clf__n_estimators': [5, 10, 25, 40, 50],
-    'clf__criterion': ['gini', 'entropy'],
-    'clf__max_depth': np.arange(5,25,5),
-    'clf__min_samples_split': np.arange(5,35,5),
-    'clf__min_samples_leaf': np.arange(5,35,5) ,
-    'clf__max_features': ['auto', 'log2', None]},
-'GradBoost':{'clf__max_features	':np.arange(5,10,1)}
-}
 
-need_dense=['Gaussian']
-
-to_plot=['GradBoost']
-
+to_plot=['GradBoost'] 
+testX = test_data.drop(columns = 'income')
+testY = test_data['income']
 for learner in to_plot:
 	c=classifiers[learner]
-	grid= grids[learner]
 	pipeline.set_params(clf = c)
-	if c in need_dense:
-		pipeline.set_params(transformer=dense)
-	else:
-		pipeline.set_params(transformer=light)
-	gridSearch = GridSearchCV(pipeline, grid, cv=3)
-	gridSearch.fit(X_train, Y_train) 
+	X_train=preprocessor.fit_transform(X_train)
+	testX = preprocessor.fit_transform(testX)
+	c.fit(X_train,Y_train)
+	score=c.score(testX,testY)
 	print('---------------------------------')
 	print(str(c))
 	print('-----------------------------------')
-	print(gridSearch.best_params_,np.amax(gridSearch.cv_results_["mean_test_score"]))
-	scores = pd.DataFrame(gridSearch.cv_results_)
-	scores.to_csv(learner+'1.scores')
-	print(learner +'.scores saved')
-	scores.sort_values(by='rank_test_score')
-	scores.to_csv(learner+'1.scores.best')
-	print(learner+'.scores.best saved')
+	print(score)

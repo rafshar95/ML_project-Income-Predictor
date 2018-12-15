@@ -1,12 +1,6 @@
 import numpy as np
 import pandas as pd
 
-def load_files(f_name):
-	data = np.genfromtxt('data/'+str(f_name),delimiter=',')
-	X = data[:,:-1]
-	Y = data[:,-1]
-	return X, Y
-
 def get_frequencies(data):
 	for col in data.columns:
 		counts = data[col].value_counts(dropna=False).sort_index()
@@ -55,3 +49,11 @@ df = pd.read_csv('data/adult.data',header=None,names=['age', 'workclass', 'fnlwg
 		'marital-status','occupation', 'relationship', 'race','sex','capital-gain', 'capital-loss',
        	'hours-per-week', 'country','income'])
 #get_frequencies(df)
+
+def check_new(fname):
+	data= pd.read_csv(fname)
+	conversion = data.set_index('Value')['New'].to_dict()
+	new = data.set_index('Value').groupby('New').apply(lambda x: (np.sum(x['Frequency']*x['Probability']))/np.sum(x['Frequency']))
+	old = data.set_index('Value')['Probability']
+	diff=pd.Series([old[v]-new[conversion[v]] for v in old.index],old.index)
+	return new,old,diff
